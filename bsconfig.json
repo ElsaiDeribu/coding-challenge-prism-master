@@ -1,0 +1,33 @@
+{
+  "name": "@draftbit/coding-challenge-prism",
+  "reason": { "react-jsx": 3 },
+  "bsc-flags": ["-bs-super-errors"],
+  "sources": [
+    {
+      "dir": "src",
+      "subdirs": true
+    }
+  ],
+  "package-specs": [
+    {
+      "module": "es6",
+      "in-source": true
+    }
+  ],
+  "suffix": ".bs.js",
+  "namespace": true,
+  "bs-dependencies": [ "@rescript/react" ],
+  "bs-dev-dependencies":[ ],
+  "ppx-flags": [],
+  "refmt": 3,
+"gentypeconfig": {
+    "language": "typescript",
+    "shims": {},
+    "generatedFileExtension": ".gen.tsx",
+    "module": "es6",
+    "debug": {
+      "all": false,
+      "basic": false
+    }
+}
+}

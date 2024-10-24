@@ -1,0 +1,7 @@
+{
+  "delay": "1000ms",
+  "env": {
+    "NODE_ENV": "development"
+  },
+  "ext": "ejs,ts,js,json,graphql,html"
+}
