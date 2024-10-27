@@ -4,8 +4,6 @@
 module ControlPaddingAndMargin = {
   type inputState = Default | Changed | Focused
   type metric = Px | Pt | Percent
-  type side = Top | Right | Bottom | Left
-  type property = Margin | Padding
 
   type formDataState = {
     marginTopS: inputState,
@@ -81,37 +79,17 @@ module ControlPaddingAndMargin = {
     | _ => Px
     }
 
-  let getPropertyKey = (property, side) =>
-    switch (property, side) {
-    | (Margin, Top) => "margin_top"
-    | (Margin, Right) => "margin_right"
-    | (Margin, Bottom) => "margin_bottom"
-    | (Margin, Left) => "margin_left"
-    | (Padding, Top) => "padding_top"
-    | (Padding, Right) => "padding_right"
-    | (Padding, Bottom) => "padding_bottom"
-    | (Padding, Left) => "padding_left"
-    }
-
-  let updateBackend = (formData: formData, formMetrics: formMetrics) => {
+  let updateBackend = (formData: formData) => {
     let jsonData = Js.Dict.empty()
-    let updateJsonData = (property, side, value, metric) => {
-      let key = getPropertyKey(property, side)
-      Js.Dict.set(jsonData, key, Js.Json.string(value))
-      Js.Dict.set(jsonData, key ++ "_metric", Js.Json.string(getMetricString(metric)))
-    }
 
-    // Update margins
-    updateJsonData(Margin, Top, formData.marginTop, formMetrics.marginTopM)
-    updateJsonData(Margin, Right, formData.marginRight, formMetrics.marginRightM)
-    updateJsonData(Margin, Bottom, formData.marginBottom, formMetrics.marginBottomM)
-    updateJsonData(Margin, Left, formData.marginLeft, formMetrics.marginLeftM)
-
-    // Update paddings
-    updateJsonData(Padding, Top, formData.paddingTop, formMetrics.paddingTopM)
-    updateJsonData(Padding, Right, formData.paddingRight, formMetrics.paddingRightM)
-    updateJsonData(Padding, Bottom, formData.paddingBottom, formMetrics.paddingBottomM)
-    updateJsonData(Padding, Left, formData.paddingLeft, formMetrics.paddingLeftM)
+    Js.Dict.set(jsonData, "margin_top", Js.Json.string(formData.marginTop))
+    Js.Dict.set(jsonData, "margin_right", Js.Json.string(formData.marginRight))
+    Js.Dict.set(jsonData, "margin_bottom", Js.Json.string(formData.marginBottom))
+    Js.Dict.set(jsonData, "margin_left", Js.Json.string(formData.marginLeft))
+    Js.Dict.set(jsonData, "padding_top", Js.Json.string(formData.paddingTop))
+    Js.Dict.set(jsonData, "padding_right", Js.Json.string(formData.paddingRight))
+    Js.Dict.set(jsonData, "padding_bottom", Js.Json.string(formData.paddingBottom))
+    Js.Dict.set(jsonData, "padding_left", Js.Json.string(formData.paddingLeft))
 
     Fetch.updateElementStyles("1", Js.Json.object_(jsonData))
     |> Js.Promise.then_(_ => Js.Promise.resolve())
@@ -246,7 +224,7 @@ module ControlPaddingAndMargin = {
         | "paddingLeft" => {...prev, paddingLeft: formattedValue}
         | _ => prev
         }
-        updateBackend(updatedFormData, formMetrics)
+        updateBackend(updatedFormData)
         updatedFormData
       })
     }
@@ -276,7 +254,6 @@ module ControlPaddingAndMargin = {
       )
 
     let handleFocus = key => {
-      // First handle blur state for currently active field
       switch activeKey {
       | Some(currentKey) =>
         setFormDataState(prev =>
@@ -310,7 +287,6 @@ module ControlPaddingAndMargin = {
       | None => ()
       }
 
-      // Then focus the new field
       setActiveKey(_ => Some(key))
       setFormDataState(prev =>
         switch key {
@@ -367,7 +343,7 @@ module ControlPaddingAndMargin = {
         | _ => formData
         }
         setFormData(_ => updatedFormData)
-        updateBackend(updatedFormData, updatedMetrics)
+        updateBackend(updatedFormData)
         updatedMetrics
       })
     }

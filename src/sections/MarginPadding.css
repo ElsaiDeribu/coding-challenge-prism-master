@@ -26,11 +26,17 @@
 
 .select {
   font-size: 12px;
+  cursor: pointer;
+  padding: 3px;
+  border-radius: 2px;
   background-color: #28334d;
   color: white;
   border: none;
   outline: none;
   margin-left: 1px;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
 }
 
 .inputContainer {
