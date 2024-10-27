@@ -40,8 +40,6 @@ module ControlPaddingAndMargin = {
     paddingLeftM: metric,
   }
 
-
-
   let getInputStyle = state => {
     switch state {
     | Default => "input"
@@ -73,6 +71,14 @@ module ControlPaddingAndMargin = {
     | Px => "px"
     | Pt => "pt"
     | Percent => "%"
+    }
+
+  let getMetricFromString = str =>
+    switch str {
+    | "px" => Px
+    | "pt" => Pt
+    | "%" => Percent
+    | _ => Px
     }
 
   let getPropertyKey = (property, side) =>
@@ -154,6 +160,7 @@ module ControlPaddingAndMargin = {
     let (formData, setFormData) = React.useState(_ => initialFormData)
     let (formDataState, setFormDataState) = React.useState(_ => initialFormDataState)
     let (formMetrics, setFormMetrics) = React.useState(_ => initialFormMetrics)
+    let (activeKey, setActiveKey) = React.useState(_ => None)
 
     React.useEffect0(() => {
       let fetchStyles = () => {
@@ -164,6 +171,12 @@ module ControlPaddingAndMargin = {
             Js.Dict.get(styles, key)
             ->Belt.Option.flatMap(Js.Json.decodeString)
             ->Belt.Option.getWithDefault("")
+
+          let getMetricValue = key =>
+            Js.Dict.get(styles, key ++ "_metric")
+            ->Belt.Option.flatMap(Js.Json.decodeString)
+            ->Belt.Option.map(getMetricFromString)
+            ->Belt.Option.getWithDefault(Px)
 
           let updatedFormData = {
             marginTop: getValue("margin_top"),
@@ -176,7 +189,19 @@ module ControlPaddingAndMargin = {
             paddingLeft: getValue("padding_left"),
           }
 
+          let updatedFormMetrics = {
+            marginTopM: getMetricValue("margin_top"),
+            marginRightM: getMetricValue("margin_right"),
+            marginBottomM: getMetricValue("margin_bottom"),
+            marginLeftM: getMetricValue("margin_left"),
+            paddingTopM: getMetricValue("padding_top"),
+            paddingRightM: getMetricValue("padding_right"),
+            paddingBottomM: getMetricValue("padding_bottom"),
+            paddingLeftM: getMetricValue("padding_left"),
+          }
+
           setFormData(_ => updatedFormData)
+          setFormMetrics(_ => updatedFormMetrics)
           setFormDataState(_ => {
             marginTopS: updatedFormData.marginTop !== "" ? Changed : Default,
             marginRightS: updatedFormData.marginRight !== "" ? Changed : Default,
@@ -226,7 +251,67 @@ module ControlPaddingAndMargin = {
       })
     }
 
-    let handleFocus = key =>
+    let handleBlur = key =>
+      setFormDataState(prev =>
+        switch key {
+        | "marginTop" => {...prev, marginTopS: formData.marginTop !== "" ? Changed : Default}
+        | "marginRight" => {...prev, marginRightS: formData.marginRight !== "" ? Changed : Default}
+        | "marginBottom" => {
+            ...prev,
+            marginBottomS: formData.marginBottom !== "" ? Changed : Default,
+          }
+        | "marginLeft" => {...prev, marginLeftS: formData.marginLeft !== "" ? Changed : Default}
+        | "paddingTop" => {...prev, paddingTopS: formData.paddingTop !== "" ? Changed : Default}
+        | "paddingRight" => {
+            ...prev,
+            paddingRightS: formData.paddingRight !== "" ? Changed : Default,
+          }
+        | "paddingBottom" => {
+            ...prev,
+            paddingBottomS: formData.paddingBottom !== "" ? Changed : Default,
+          }
+        | "paddingLeft" => {...prev, paddingLeftS: formData.paddingLeft !== "" ? Changed : Default}
+        | _ => prev
+        }
+      )
+
+    let handleFocus = key => {
+      // First handle blur state for currently active field
+      switch activeKey {
+      | Some(currentKey) =>
+        setFormDataState(prev =>
+          switch currentKey {
+          | "marginTop" => {...prev, marginTopS: formData.marginTop !== "" ? Changed : Default}
+          | "marginRight" => {
+              ...prev,
+              marginRightS: formData.marginRight !== "" ? Changed : Default,
+            }
+          | "marginBottom" => {
+              ...prev,
+              marginBottomS: formData.marginBottom !== "" ? Changed : Default,
+            }
+          | "marginLeft" => {...prev, marginLeftS: formData.marginLeft !== "" ? Changed : Default}
+          | "paddingTop" => {...prev, paddingTopS: formData.paddingTop !== "" ? Changed : Default}
+          | "paddingRight" => {
+              ...prev,
+              paddingRightS: formData.paddingRight !== "" ? Changed : Default,
+            }
+          | "paddingBottom" => {
+              ...prev,
+              paddingBottomS: formData.paddingBottom !== "" ? Changed : Default,
+            }
+          | "paddingLeft" => {
+              ...prev,
+              paddingLeftS: formData.paddingLeft !== "" ? Changed : Default,
+            }
+          | _ => prev
+          }
+        )
+      | None => ()
+      }
+
+      // Then focus the new field
+      setActiveKey(_ => Some(key))
       setFormDataState(prev =>
         switch key {
         | "marginTop" => {...prev, marginTopS: Focused}
@@ -240,21 +325,7 @@ module ControlPaddingAndMargin = {
         | _ => prev
         }
       )
-
-    let handleBlur = key =>
-      setFormDataState(prev =>
-        switch key {
-        | "marginTop" => {...prev, marginTopS: formData.marginTop !== "" ? Changed : Default}
-        | "marginRight" => {...prev, marginRightS: formData.marginRight !== "" ? Changed : Default}
-        | "marginBottom" => {...prev, marginBottomS: formData.marginBottom !== "" ? Changed : Default}
-        | "marginLeft" => {...prev, marginLeftS: formData.marginLeft !== "" ? Changed : Default}
-        | "paddingTop" => {...prev, paddingTopS: formData.paddingTop !== "" ? Changed : Default}
-        | "paddingRight" => {...prev, paddingRightS: formData.paddingRight !== "" ? Changed : Default}
-        | "paddingBottom" => {...prev, paddingBottomS: formData.paddingBottom !== "" ? Changed : Default}
-        | "paddingLeft" => {...prev, paddingLeftS: formData.paddingLeft !== "" ? Changed : Default}
-        | _ => prev
-        }
-      )
+    }
 
     let handleMetricChange = (key, metric) => {
       setFormMetrics(prev => {
@@ -338,10 +409,17 @@ module ControlPaddingAndMargin = {
       | _ => Px
       }
 
+      let (_, valueMetric) = parseValue(value)
+      let displayMetric = value !== "" ? valueMetric : currentMetric
+
       <div className={`inputContainer ${className}`}>
         {switch stateKey {
         | Focused =>
-          <div className={`valueDisplayFocused ${className}`}>
+          <div
+            className={`valueDisplayFocused ${className}`}
+            onClick={e => {
+              ReactEvent.Mouse.stopPropagation(e)
+            }}>
             <input
               type_="text"
               className={getInputStyle(stateKey)}
@@ -349,10 +427,11 @@ module ControlPaddingAndMargin = {
               onChange={e => handleInputChange(key, ReactEvent.Form.target(e)["value"])}
               onKeyDown={e => ReactEvent.Keyboard.key(e) === "Enter" ? handleBlur(key) : ()}
               autoFocus={true}
+              onClick={ReactEvent.Mouse.stopPropagation}
             />
             <select
               className="select"
-              value={getMetricString(currentMetric)}
+              value={getMetricString(displayMetric)}
               onChange={e => {
                 let selectedMetric = switch ReactEvent.Form.target(e)["value"] {
                 | "px" => Px
@@ -362,7 +441,6 @@ module ControlPaddingAndMargin = {
                 }
                 handleMetricChange(key, selectedMetric)
               }}
-              onMouseDown={ReactEvent.Mouse.stopPropagation}
               onClick={ReactEvent.Mouse.stopPropagation}>
               <option value="px"> {React.string("px")} </option>
               <option value="pt"> {React.string("pt")} </option>
@@ -372,20 +450,34 @@ module ControlPaddingAndMargin = {
         | Changed =>
           <div
             className={`valueDisplayChanged ${className}`}
-            onClick={_ => handleFocus(key)}>
+            onClick={e => {
+              ReactEvent.Mouse.stopPropagation(e)
+              handleFocus(key)
+            }}>
             {React.string(value)}
           </div>
         | Default =>
           <div
             className={`valueDisplayDefault ${className}`}
-            onClick={_ => handleFocus(key)}>
+            onClick={e => {
+              ReactEvent.Mouse.stopPropagation(e)
+              handleFocus(key)
+            }}>
             {React.string("auto")}
           </div>
         }}
       </div>
     }
 
-    <div className="boxContainer">
+    <div
+      className="boxContainer"
+      onClick={_ => {
+        switch activeKey {
+        | Some(key) => handleBlur(key)
+        | None => ()
+        }
+        setActiveKey(_ => None)
+      }}>
       <div className="box">
         {renderInput("marginTop", "marginTop")}
         {renderInput("marginBottom", "marginBottom")}
