@@ -19,6 +19,59 @@ const setupApp = (client: Client): express.Application => {
     res.json(rows);
   });
 
+  // Get element styles
+  app.get("/element/:id/styles", async (req, res) => {
+    const { id } = req.params;
+    try {
+      const { rows } = await client.query(
+        `SELECT * FROM element_styles WHERE element_id = $1`,
+        [id]
+      );
+      if (rows.length === 0) {
+        res.status(404).json({ error: "Element styles not found" });
+      } else {
+        res.json(rows[0]);
+      }
+    } catch (error) {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Update element styles
+  app.put("/element/:id/styles", async (req, res) => {
+    const { id } = req.params;
+    const {
+      margin_top,
+      margin_right,
+      margin_bottom,
+      margin_left,
+      padding_top,
+      padding_right,
+      padding_bottom,
+      padding_left
+    } = req.body;
+
+    try {
+      const { rows } = await client.query(
+        `UPDATE element_styles
+         SET margin_top = $1, margin_right = $2, margin_bottom = $3, margin_left = $4,
+             padding_top = $5, padding_right = $6, padding_bottom = $7, padding_left = $8
+         WHERE element_id = $9
+         RETURNING *`,
+        [margin_top, margin_right, margin_bottom, margin_left,
+         padding_top, padding_right, padding_bottom, padding_left, id]
+      );
+
+      if (rows.length === 0) {
+        res.status(404).json({ error: "Element styles not found" });
+      } else {
+        res.json(rows[0]);
+      }
+    } catch (error) {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   return app;
 };
 
