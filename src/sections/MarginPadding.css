@@ -17,7 +17,7 @@
 .input {
   width: 40px;
   height: 18px;
-  font-size: 12px;
+  font-size: 14px;
   background-color: #28334d;
   color: white;
   border: none;
@@ -108,7 +108,7 @@
 .valueDisplayChanged {
   position: absolute;
   display: flex;
-  font-size: 12px;
+  font-size: 14px;
   cursor: pointer;
   color: white;
 }
@@ -120,17 +120,17 @@
 .valueDisplayDefault {
   position: absolute;
   display: flex;
-  font-size: 12px;
+  font-size: 14px;
   cursor: pointer;
   color: white;
 }
 
 .valueDisplayChanged.marginLeft {
-  width: 50px;
+  width: 55px;
   justify-content: end;
 }
 .valueDisplayChanged.marginRight {
-  width: 50px;
+  width: 55px;
   justify-content: start;
 }
 .valueDisplayDefault.marginLeft {
@@ -145,7 +145,7 @@
 .valueDisplayFocused {
   position: absolute;
   display: flex;
-  font-size: 12px;
+  font-size: 14px;
   cursor: pointer;
   color: white;
 }
