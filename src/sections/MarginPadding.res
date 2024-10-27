@@ -430,7 +430,7 @@ module ControlPaddingAndMargin = {
               ReactEvent.Mouse.stopPropagation(e)
               handleFocus(key)
             }}>
-            {React.string(value)}
+            <span className="text-value"> {React.string(value)} </span>
           </div>
         | Default =>
           <div
@@ -439,7 +439,7 @@ module ControlPaddingAndMargin = {
               ReactEvent.Mouse.stopPropagation(e)
               handleFocus(key)
             }}>
-            {React.string("auto")}
+            <span className="text-auto"> {React.string("auto")} </span>
           </div>
         }}
       </div>

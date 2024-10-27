@@ -15,7 +15,7 @@
 }
 
 .input {
-  width: 30px;
+  width: 40px;
   height: 18px;
   font-size: 12px;
   background-color: #28334d;
@@ -107,11 +107,14 @@
 
 .valueDisplayChanged {
   position: absolute;
-  border-bottom: 1px dotted yellow;
   display: flex;
   font-size: 12px;
   cursor: pointer;
   color: white;
+}
+
+.valueDisplayChanged span {
+  border-bottom: 1px dotted yellow;
 }
 
 .valueDisplayDefault {
@@ -120,6 +123,23 @@
   font-size: 12px;
   cursor: pointer;
   color: white;
+}
+
+.valueDisplayChanged.marginLeft {
+  width: 50px;
+  justify-content: end;
+}
+.valueDisplayChanged.marginRight {
+  width: 50px;
+  justify-content: start;
+}
+.valueDisplayDefault.marginLeft {
+  width: 50px;
+  justify-content: end;
+}
+.valueDisplayDefault.marginRight {
+  width: 50px;
+  justify-content: start;
 }
 
 .valueDisplayFocused {
