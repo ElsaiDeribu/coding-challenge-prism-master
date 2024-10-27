@@ -1,6 +1,11 @@
+// Import the CSS module
+%raw(`require("./MarginPadding.css")`)
+
 module ControlPaddingAndMargin = {
   type inputState = Default | Changed | Focused
   type metric = Px | Pt | Percent
+  type side = Top | Right | Bottom | Left
+  type property = Margin | Padding
 
   type formDataState = {
     marginTopS: inputState,
@@ -35,169 +40,73 @@ module ControlPaddingAndMargin = {
     paddingLeftM: metric,
   }
 
-  let styles = {
-    "boxContainer": ReactDOM.Style.make(
-      ~display="flex",
-      ~justifyContent="center",
-      ~alignItems="center",
-      ~width="200px",
-      ~height="200px",
-      ~paddingLeft="50px",
-      (),
-    ),
-    "box": ReactDOM.Style.make(
-      ~position="relative",
-      ~width="180px",
-      ~height="100px",
-      ~border="5px solid #28334D",
-      (),
-    ),
-    "input": ReactDOM.Style.make(
-      ~width="30px",
-      ~height="18px",
-      ~fontSize="12px",
-      ~backgroundColor="#28334D",
-      ~color="white",
-      ~border="none",
-      ~outline="none",
-      (),
-    ),
-    "select": ReactDOM.Style.make(
-      ~fontSize="12px",
-      ~backgroundColor="#28334D",
-      ~color="white",
-      ~border="none",
-      ~outline="none",
-      ~marginLeft="1px",
-      (),
-    ),
-    "inputContainer": ReactDOM.Style.make(
-      ~display="flex",
-      ~alignItems="center",
-      ~position="absolute",
-      (),
-    ),
-    "inputDropdownContainer": ReactDOM.Style.make(~position="absolute", ()),
-    "marginTop": ReactDOM.Style.make(~top="-20px", ~left="50%", ~transform="translateX(-50%)", ()),
-    "marginBottom": ReactDOM.Style.make(
-      ~bottom="-20px",
-      ~left="50%",
-      ~transform="translateX(-50%)",
-      (),
-    ),
-    "marginLeft": ReactDOM.Style.make(~left="-35px", ~top="50%", ~transform="translateY(-50%)", ()),
-    "marginRight": ReactDOM.Style.make(
-      ~right="-35px",
-      ~top="50%",
-      ~transform="translateY(-50%)",
-      (),
-    ),
-    "paddingTop": ReactDOM.Style.make(~top="5px", ~left="50%", ~transform="translateX(-50%)", ()),
-    "paddingBottom": ReactDOM.Style.make(
-      ~bottom="5px",
-      ~left="50%",
-      ~transform="translateX(-50%)",
-      (),
-    ),
-    "paddingLeft": ReactDOM.Style.make(~left="5px", ~top="50%", ~transform="translateY(-50%)", ()),
-    "paddingRight": ReactDOM.Style.make(
-      ~right="5px",
-      ~top="50%",
-      ~transform="translateY(-50%)",
-      (),
-    ),
-    "content": ReactDOM.Style.make(
-      ~position="absolute",
-      ~top="50%",
-      ~left="50%",
-      ~transform="translate(-50%, -50%)",
-      ~fontSize="14px",
-      (),
-    ),
-    "valueDisplayChanged": ReactDOM.Style.make(
-      ~position="absolute",
-      ~borderBottom="1px dotted yellow",
-      ~display="flex",
-      ~fontSize="12px",
-      ~cursor="pointer",
-      ~color="white",
-      (),
-    ),
-    "valueDisplayDefault": ReactDOM.Style.make(
-      ~position="absolute",
-      ~display="flex",
-      ~fontSize="12px",
-      ~cursor="pointer",
-      ~color="white",
-      (),
-    ),
-    "valueDisplayFocused": ReactDOM.Style.make(
-      ~position="absolute",
-      ~display="flex",
-      ~fontSize="12px",
-      ~cursor="pointer",
-      ~color="white",
-      (),
-    ),
-  }
+
 
   let getInputStyle = state => {
     switch state {
-    | Default => ReactDOM.Style.combine(styles["input"], ReactDOM.Style.make(~color="white", ()))
-    | Changed => ReactDOM.Style.combine(styles["input"], ReactDOM.Style.make(~color="white", ()))
-    | Focused =>
-      ReactDOM.Style.combine(
-        styles["input"],
-        ReactDOM.Style.make(
-          ~color="white",
-          ~borderRadius="2px",
-          ~boxShadow="0 0 0 1px #139BD1",
-          (),
-        ),
-      )
+    | Default => "input"
+    | Changed => "input"
+    | Focused => "input inputFocused"
     }
   }
 
   let parseValue = value => {
     let numericValue = Js.String.replaceByRe(%re("/[^0-9]/g"), "", value)
-    let metric = if Js.String.includes("%", value) {
-      Percent
-    } else if Js.String.includes("pt", value) {
-      Pt
-    } else {
-      Px
+    let metric = switch true {
+    | _ if Js.String.includes("%", value) => Percent
+    | _ if Js.String.includes("pt", value) => Pt
+    | _ => Px
     }
     (numericValue, metric)
   }
 
-  let formatValue = (value, metric) => {
+  let formatValue = (value, metric) =>
     switch (value, metric) {
     | ("", _) => ""
     | (value, Percent) => value ++ "%"
     | (value, Pt) => value ++ "pt"
     | (value, Px) => value ++ "px"
     }
-  }
+
+  let getMetricString = metric =>
+    switch metric {
+    | Px => "px"
+    | Pt => "pt"
+    | Percent => "%"
+    }
+
+  let getPropertyKey = (property, side) =>
+    switch (property, side) {
+    | (Margin, Top) => "margin_top"
+    | (Margin, Right) => "margin_right"
+    | (Margin, Bottom) => "margin_bottom"
+    | (Margin, Left) => "margin_left"
+    | (Padding, Top) => "padding_top"
+    | (Padding, Right) => "padding_right"
+    | (Padding, Bottom) => "padding_bottom"
+    | (Padding, Left) => "padding_left"
+    }
 
   let updateBackend = (formData: formData, formMetrics: formMetrics) => {
     let jsonData = Js.Dict.empty()
-    let updateJsonData = (key, value, metric) => {
+    let updateJsonData = (property, side, value, metric) => {
+      let key = getPropertyKey(property, side)
       Js.Dict.set(jsonData, key, Js.Json.string(value))
-      let metricString = switch metric {
-      | Px => "px"
-      | Pt => "pt"
-      | Percent => "%"
-      }
-      Js.Dict.set(jsonData, key ++ "_metric", Js.Json.string(metricString))
+      Js.Dict.set(jsonData, key ++ "_metric", Js.Json.string(getMetricString(metric)))
     }
-    updateJsonData("margin_top", formData.marginTop, formMetrics.marginTopM)
-    updateJsonData("margin_right", formData.marginRight, formMetrics.marginRightM)
-    updateJsonData("margin_bottom", formData.marginBottom, formMetrics.marginBottomM)
-    updateJsonData("margin_left", formData.marginLeft, formMetrics.marginLeftM)
-    updateJsonData("padding_top", formData.paddingTop, formMetrics.paddingTopM)
-    updateJsonData("padding_right", formData.paddingRight, formMetrics.paddingRightM)
-    updateJsonData("padding_bottom", formData.paddingBottom, formMetrics.paddingBottomM)
-    updateJsonData("padding_left", formData.paddingLeft, formMetrics.paddingLeftM)
+
+    // Update margins
+    updateJsonData(Margin, Top, formData.marginTop, formMetrics.marginTopM)
+    updateJsonData(Margin, Right, formData.marginRight, formMetrics.marginRightM)
+    updateJsonData(Margin, Bottom, formData.marginBottom, formMetrics.marginBottomM)
+    updateJsonData(Margin, Left, formData.marginLeft, formMetrics.marginLeftM)
+
+    // Update paddings
+    updateJsonData(Padding, Top, formData.paddingTop, formMetrics.paddingTopM)
+    updateJsonData(Padding, Right, formData.paddingRight, formMetrics.paddingRightM)
+    updateJsonData(Padding, Bottom, formData.paddingBottom, formMetrics.paddingBottomM)
+    updateJsonData(Padding, Left, formData.paddingLeft, formMetrics.paddingLeftM)
+
     Fetch.updateElementStyles("1", Js.Json.object_(jsonData))
     |> Js.Promise.then_(_ => Js.Promise.resolve())
     |> Js.Promise.catch(error => {
@@ -251,35 +160,24 @@ module ControlPaddingAndMargin = {
         Fetch.getElementStyles("1")
         |> Js.Promise.then_(stylesJson => {
           let styles = Js.Json.decodeObject(stylesJson)->Belt.Option.getExn
+          let getValue = key =>
+            Js.Dict.get(styles, key)
+            ->Belt.Option.flatMap(Js.Json.decodeString)
+            ->Belt.Option.getWithDefault("")
+
           let updatedFormData = {
-            marginTop: Js.Dict.get(styles, "margin_top")
-            ->Belt.Option.flatMap(Js.Json.decodeString)
-            ->Belt.Option.getWithDefault(""),
-            marginRight: Js.Dict.get(styles, "margin_right")
-            ->Belt.Option.flatMap(Js.Json.decodeString)
-            ->Belt.Option.getWithDefault(""),
-            marginBottom: Js.Dict.get(styles, "margin_bottom")
-            ->Belt.Option.flatMap(Js.Json.decodeString)
-            ->Belt.Option.getWithDefault(""),
-            marginLeft: Js.Dict.get(styles, "margin_left")
-            ->Belt.Option.flatMap(Js.Json.decodeString)
-            ->Belt.Option.getWithDefault(""),
-            paddingTop: Js.Dict.get(styles, "padding_top")
-            ->Belt.Option.flatMap(Js.Json.decodeString)
-            ->Belt.Option.getWithDefault(""),
-            paddingRight: Js.Dict.get(styles, "padding_right")
-            ->Belt.Option.flatMap(Js.Json.decodeString)
-            ->Belt.Option.getWithDefault(""),
-            paddingBottom: Js.Dict.get(styles, "padding_bottom")
-            ->Belt.Option.flatMap(Js.Json.decodeString)
-            ->Belt.Option.getWithDefault(""),
-            paddingLeft: Js.Dict.get(styles, "padding_left")
-            ->Belt.Option.flatMap(Js.Json.decodeString)
-            ->Belt.Option.getWithDefault(""),
+            marginTop: getValue("margin_top"),
+            marginRight: getValue("margin_right"),
+            marginBottom: getValue("margin_bottom"),
+            marginLeft: getValue("margin_left"),
+            paddingTop: getValue("padding_top"),
+            paddingRight: getValue("padding_right"),
+            paddingBottom: getValue("padding_bottom"),
+            paddingLeft: getValue("padding_left"),
           }
+
           setFormData(_ => updatedFormData)
-          // Update formDataState to Changed for non-empty values
-          setFormDataState(prev => {
+          setFormDataState(_ => {
             marginTopS: updatedFormData.marginTop !== "" ? Changed : Default,
             marginRightS: updatedFormData.marginRight !== "" ? Changed : Default,
             marginBottomS: updatedFormData.marginBottom !== "" ? Changed : Default,
@@ -328,8 +226,8 @@ module ControlPaddingAndMargin = {
       })
     }
 
-    let handleFocus = key => {
-      setFormDataState(prev => {
+    let handleFocus = key =>
+      setFormDataState(prev =>
         switch key {
         | "marginTop" => {...prev, marginTopS: Focused}
         | "marginRight" => {...prev, marginRightS: Focused}
@@ -341,33 +239,22 @@ module ControlPaddingAndMargin = {
         | "paddingLeft" => {...prev, paddingLeftS: Focused}
         | _ => prev
         }
-      })
-    }
+      )
 
-    let handleBlur = key => {
-      setFormDataState(prev => {
+    let handleBlur = key =>
+      setFormDataState(prev =>
         switch key {
         | "marginTop" => {...prev, marginTopS: formData.marginTop !== "" ? Changed : Default}
         | "marginRight" => {...prev, marginRightS: formData.marginRight !== "" ? Changed : Default}
-        | "marginBottom" => {
-            ...prev,
-            marginBottomS: formData.marginBottom !== "" ? Changed : Default,
-          }
+        | "marginBottom" => {...prev, marginBottomS: formData.marginBottom !== "" ? Changed : Default}
         | "marginLeft" => {...prev, marginLeftS: formData.marginLeft !== "" ? Changed : Default}
         | "paddingTop" => {...prev, paddingTopS: formData.paddingTop !== "" ? Changed : Default}
-        | "paddingRight" => {
-            ...prev,
-            paddingRightS: formData.paddingRight !== "" ? Changed : Default,
-          }
-        | "paddingBottom" => {
-            ...prev,
-            paddingBottomS: formData.paddingBottom !== "" ? Changed : Default,
-          }
+        | "paddingRight" => {...prev, paddingRightS: formData.paddingRight !== "" ? Changed : Default}
+        | "paddingBottom" => {...prev, paddingBottomS: formData.paddingBottom !== "" ? Changed : Default}
         | "paddingLeft" => {...prev, paddingLeftS: formData.paddingLeft !== "" ? Changed : Default}
         | _ => prev
         }
-      })
-    }
+      )
 
     let handleMetricChange = (key, metric) => {
       setFormMetrics(prev => {
@@ -382,6 +269,7 @@ module ControlPaddingAndMargin = {
         | "paddingLeft" => {...prev, paddingLeftM: metric}
         | _ => prev
         }
+
         let value = switch key {
         | "marginTop" => formData.marginTop
         | "marginRight" => formData.marginRight
@@ -393,6 +281,7 @@ module ControlPaddingAndMargin = {
         | "paddingLeft" => formData.paddingLeft
         | _ => ""
         }
+
         let (numericValue, _) = parseValue(value)
         let formattedValue = formatValue(numericValue, metric)
         let updatedFormData = switch key {
@@ -412,7 +301,7 @@ module ControlPaddingAndMargin = {
       })
     }
 
-    let renderInput = (key, style) => {
+    let renderInput = (key, className) => {
       let stateKey = switch key {
       | "marginTop" => formDataState.marginTopS
       | "marginRight" => formDataState.marginRightS
@@ -449,29 +338,21 @@ module ControlPaddingAndMargin = {
       | _ => Px
       }
 
-      <div style={ReactDOM.Style.combine(styles["inputContainer"], style)}>
+      <div className={`inputContainer ${className}`}>
         {switch stateKey {
         | Focused =>
-          <div style={ReactDOM.Style.combine(styles["valueDisplayFocused"], style)}>
+          <div className={`valueDisplayFocused ${className}`}>
             <input
               type_="text"
-              style={getInputStyle(stateKey)}
+              className={getInputStyle(stateKey)}
               value={Js.String.replaceByRe(%re("/[^0-9]/g"), "", value)}
               onChange={e => handleInputChange(key, ReactEvent.Form.target(e)["value"])}
-              onKeyDown={e => {
-                if ReactEvent.Keyboard.key(e) === "Enter" {
-                  handleBlur(key)
-                }
-              }}
+              onKeyDown={e => ReactEvent.Keyboard.key(e) === "Enter" ? handleBlur(key) : ()}
               autoFocus={true}
             />
             <select
-              style={styles["select"]}
-              value={switch currentMetric {
-              | Px => "px"
-              | Pt => "pt"
-              | Percent => "%"
-              }}
+              className="select"
+              value={getMetricString(currentMetric)}
               onChange={e => {
                 let selectedMetric = switch ReactEvent.Form.target(e)["value"] {
                 | "px" => Px
@@ -481,8 +362,8 @@ module ControlPaddingAndMargin = {
                 }
                 handleMetricChange(key, selectedMetric)
               }}
-              onMouseDown={e => ReactEvent.Mouse.stopPropagation(e)}
-              onClick={e => ReactEvent.Mouse.stopPropagation(e)}>
+              onMouseDown={ReactEvent.Mouse.stopPropagation}
+              onClick={ReactEvent.Mouse.stopPropagation}>
               <option value="px"> {React.string("px")} </option>
               <option value="pt"> {React.string("pt")} </option>
               <option value="%"> {React.string("%")} </option>
@@ -490,13 +371,13 @@ module ControlPaddingAndMargin = {
           </div>
         | Changed =>
           <div
-            style={ReactDOM.Style.combine(styles["valueDisplayChanged"], style)}
+            className={`valueDisplayChanged ${className}`}
             onClick={_ => handleFocus(key)}>
             {React.string(value)}
           </div>
         | Default =>
           <div
-            style={ReactDOM.Style.combine(styles["valueDisplayDefault"], style)}
+            className={`valueDisplayDefault ${className}`}
             onClick={_ => handleFocus(key)}>
             {React.string("auto")}
           </div>
@@ -504,16 +385,16 @@ module ControlPaddingAndMargin = {
       </div>
     }
 
-    <div style={styles["boxContainer"]}>
-      <div style={styles["box"]}>
-        {renderInput("marginTop", styles["marginTop"])}
-        {renderInput("marginBottom", styles["marginBottom"])}
-        {renderInput("marginLeft", styles["marginLeft"])}
-        {renderInput("marginRight", styles["marginRight"])}
-        {renderInput("paddingTop", styles["paddingTop"])}
-        {renderInput("paddingBottom", styles["paddingBottom"])}
-        {renderInput("paddingLeft", styles["paddingLeft"])}
-        {renderInput("paddingRight", styles["paddingRight"])}
+    <div className="boxContainer">
+      <div className="box">
+        {renderInput("marginTop", "marginTop")}
+        {renderInput("marginBottom", "marginBottom")}
+        {renderInput("marginLeft", "marginLeft")}
+        {renderInput("marginRight", "marginRight")}
+        {renderInput("paddingTop", "paddingTop")}
+        {renderInput("paddingBottom", "paddingBottom")}
+        {renderInput("paddingLeft", "paddingLeft")}
+        {renderInput("paddingRight", "paddingRight")}
       </div>
     </div>
   }
